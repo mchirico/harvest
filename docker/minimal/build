@@ -1,0 +1,5 @@
+#!/bin/bash
+env GOOS=linux GOARCH=arm go build github.com/mchirico/gog/cmd/gog
+docker build -tag gogserver .
+echo -e '\n\n\nIn another window execute the following command:\n\ncurl localhost:8080\n\n'
+docker run -p 8080:8080 --rm gogserver
