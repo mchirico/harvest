@@ -1,0 +1,10 @@
+version: '3'
+services:
+  grpc:
+    build:
+      context: .
+      dockerfile: server/Dockerfile 
+    ports:
+     - "8082:8082"
+
+    

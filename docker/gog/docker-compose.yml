@@ -1,0 +1,10 @@
+version: '3'
+services:
+  gog:
+    build:
+      context: .
+      dockerfile: server/Dockerfile 
+    ports:
+     - "8080:8080"
+
+    
