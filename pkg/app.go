@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/levigross/grequests"
+	"github.com/mchirico/harvest/configure"
 	"io"
 	"log"
 	"net/http"
@@ -17,11 +18,16 @@ type App struct {
 	Router *mux.Router
 	DB     *sql.DB
 	at     *int
+	secStr *configure.SecretStruct
 }
 
 func (a *App) Initilize() {
 	a.Router = mux.NewRouter()
 	a.initializeRoutes()
+}
+
+func (a *App) InitSS(secStr *configure.SecretStruct) {
+	a.secStr = secStr
 }
 
 func (a *App) initializeRoutes() {
@@ -111,18 +117,16 @@ func (a *App) getAuth(w http.ResponseWriter, r *http.Request) {
 		ro.Headers = headers
 		ro.JSON = []byte(`{"num":6.13,"strs":["a","b"]}`)
 
-		url := "http://httpbin.org/post"
-
-		ResponseCode("code", ro, url)
+		ResponseCode("code", ro, *a.secStr)
 		fmt.Fprint(w, "code")
 
 	}
 }
 
 func ResponseCode(code string, ro grequests.RequestOptions,
-	url string) *grequests.Response {
+	secStr configure.SecretStruct) *grequests.Response {
 
-	response, err := grequests.Post(url, &ro)
+	response, err := grequests.Post(secStr.Url, &ro)
 
 	if err != nil {
 		log.Printf("err: %v\n", err)
@@ -142,5 +146,8 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	w.Write(response)
+	_, err := w.Write(response)
+	if err != nil {
+		log.Printf("Can not write response: %v\n", response)
+	}
 }
