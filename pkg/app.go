@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -110,29 +111,82 @@ func (a *App) getAuth(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		log.Printf("code: %v\n", code[0])
 
+		c := configure.CodeToPassStruct{}
+		c.Secret = a.secStr.Secret
+		c.Id = a.secStr.Id
+		c.Code = code[0]
+		c.GrantType = "authorization_code"
+
+		data, err := c.Marshel()
+		if err != nil {
+			log.Fatalf("c.Marshel %v\n", err)
+		}
+
+		log.Printf("CodeToPassStruct: %v\n", string(data))
+
 		ro := grequests.RequestOptions{}
 
 		headers := map[string]string{}
 		headers["Content-Type"] = "application/json"
+		headers["User-Agent"] = "AiPiggybot (mchirico@gmail.com)"
 		ro.Headers = headers
-		ro.JSON = []byte(`{"num":6.13,"strs":["a","b"]}`)
+		ro.JSON = data
 
-		ResponseCode("code", ro, *a.secStr)
+		defer func() {
+			ResponseCode("code", ro, *a.secStr)
+			if r := recover(); r != nil {
+				log.Println("Recovered in f", r)
+				fmt.Fprint(w, "Recovered")
+			}
+		}()
+
 		fmt.Fprint(w, "code")
+		fmt.Printf("data: %v\n", string(data))
 
+	} else {
+		fmt.Printf("\n\n Something Wrong:%v\n\n", vals)
 	}
 }
+
+/*
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: MyApp (yourname@example.com)" \
+  -d "code=$AUTHORIZATION_CODE" \
+  -d "client_id=$CLIENT_ID" \
+  -d "client_secret=$CLIENT_SECRET" \
+  -d "grant_type=authorization_code" \
+  'https://id.getharvest.com/api/v2/oauth2/token'
+
+*/
 
 func ResponseCode(code string, ro grequests.RequestOptions,
 	secStr configure.SecretStruct) *grequests.Response {
 
+	log.Printf("\n\nResponseCode...\n")
 	response, err := grequests.Post(secStr.Url, &ro)
-
 	if err != nil {
-		log.Printf("err: %v\n", err)
+		log.Printf("err (ResponseCode): \n%v\n\n\n", err)
 		return nil
 	}
-	log.Printf("out: %v\n", response)
+
+	if strings.Contains(response.String(), "error") {
+		type E struct {
+			Error     string `json:"error"`
+			ErrorDesc string `json:"error_description"`
+		}
+		e := E{}
+		response.JSON(&e)
+		if e.Error != "" {
+			log.Printf("We have a problem: %v", e.ErrorDesc)
+		}
+		return nil
+	}
+
+	log.Printf("REVIEW OUT:\n%v\n\n", response)
+	configure.WriteResponseDataToFile(response, "https://id.getharvest.com/api/v2/accounts")
+
 	return response
 
 }
