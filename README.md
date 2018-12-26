@@ -9,6 +9,7 @@
 go get -u github.com/gorilla/mux
 go get -u github.com/gorilla/rpc
 go get -u github.com/levigross/grequests
+go get -u github.com/google/uuid
 
 
 # Run Different Examples

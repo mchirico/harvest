@@ -7,7 +7,32 @@ import (
 	"github.com/levigross/grequests"
 	"log"
 	"os/user"
+	"strings"
 )
+
+type TODOStruct struct {
+	Id     string `json:"client_id"`
+	Secret string `json:"client_secret"`
+}
+
+type TODOtoken struct {
+	Token string `json:"access_token"`
+	Type  string `json:"token_type"`
+}
+
+type LiveStruct struct {
+	Refresh string `json:"refresh_token"`
+	Id      string `json:"client_id"`
+	Secret  string `json:"client_secret"`
+	Type    string `json:"grant_type"`
+}
+
+type LastAccess struct {
+	Access  string `json:"access_token"`
+	Expires string `json:"expires_in"`
+	Start   string `json:time_write`
+	Refresh LiveStruct
+}
 
 type SecretStruct struct {
 	Id      string `json:"clientID"`
@@ -25,7 +50,7 @@ type CodeToPassStruct struct {
 	GrantType string `json:"grant_type"`
 }
 
-type ResultData struct {
+type RefreshStruct struct {
 	Access  string `json:"access_token"`
 	Refresh string `json:"refresh_token"`
 	Type    string `json:"token_type"`
@@ -108,5 +133,95 @@ func WriteResponseDataToFile(response *grequests.Response, url string) (int, err
 	}
 	log.Printf("We did not write")
 	return -1, errors.New("Can't work with result")
+
+}
+
+func GetLastAccess2() LastAccess {
+
+	usr, _ := user.Current()
+	file := usr.HomeDir + "/.harvestLive"
+	datain, _ := readFile(file)
+	l := LastAccess{}
+	json.Unmarshal([]byte(datain), &l)
+	log.Println(l.Start)
+	log.Println(l.Refresh.Id)
+	return l
+}
+
+func GetTODO() TODOStruct {
+	usr, _ := user.Current()
+	file := usr.HomeDir + "/.todoapi"
+	jsonData, _ := readFile(file)
+	t := TODOStruct{}
+	json.Unmarshal([]byte(jsonData), &t)
+
+	return t
+}
+
+func GetTODOtoken() TODOtoken {
+	usr, _ := user.Current()
+	file := usr.HomeDir + "/.todotoken"
+	jsonData, _ := readFile(file)
+	t := TODOtoken{}
+	json.Unmarshal([]byte(jsonData), &t)
+
+	return t
+
+}
+
+func Refresh() string {
+
+	l := GetLastAccess2()
+	r := LiveStruct{}
+	Access := l.Access
+	r = l.Refresh
+	GrantType := "refresh_token"
+
+	ro := grequests.RequestOptions{}
+	headers := map[string]string{}
+	headers["Content-Type"] = "application/json"
+	headers["grant_type"] = GrantType
+	headers["Authorization"] = fmt.Sprintf("Bearer %v", Access)
+
+	ro.Headers = headers
+	data, _ := json.Marshal(r)
+	ro.JSON = data
+	url := "https://id.getharvest.com/api/v2/oauth2/token"
+	result, err := grequests.Post(url, &ro)
+
+	log.Println(result.String())
+	log.Println(err)
+
+	return result.String()
+}
+
+func UnmarshelRefreshToken(str string) RefreshStruct {
+	res := RefreshStruct{}
+	json.Unmarshal([]byte(str), &res)
+	return res
+}
+
+/*
+curl "https://id.getharvest.com/api/v2/accounts" \
+  -H "Authorization: Bearer 14530" \
+  -H "User-Agent: AiPiggybot (mchirico@gmail.com)"
+*/
+func GetID(access_token string) (string, error) {
+	ro := grequests.RequestOptions{}
+	headers := map[string]string{}
+	headers["Content-Type"] = "application/json"
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", string(access_token))
+	headers["User-Agent"] = "AiPiggybot (mchirico@gmail.com)"
+	ro.Headers = headers
+	url := "https://id.getharvest.com/api/v2/accounts"
+	result, err := grequests.Get(url, &ro)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(result.String(), "error") {
+		return result.String(), errors.New("Result contains error")
+	}
+	return result.String(), err
 
 }
