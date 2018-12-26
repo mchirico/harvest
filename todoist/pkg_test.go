@@ -19,6 +19,13 @@ func TestGetAllTasks(t *testing.T) {
 	log.Printf("here.... %v, %v\n", records[0].Id, len(records))
 }
 
+func TestGetAllTasksFunction(t *testing.T) {
+	r, _ := GetAllTasks()
+	rjson, _ := json.Marshal(r)
+	log.Printf("tasks: %s\n", rjson)
+
+}
+
 func TestGetAllProjects(t *testing.T) {
 
 	url := "https://beta.todoist.com/API/v8/projects"

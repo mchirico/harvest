@@ -160,3 +160,13 @@ func DeleteTask(id string) (*grequests.Response, error) {
 
 	return result, err
 }
+
+func GetAllTasks() ([]TaskStruct, error) {
+	url := "https://beta.todoist.com/API/v8/tasks"
+	r, _ := GetData(url)
+
+	records := make([]TaskStruct, 0)
+	err := json.Unmarshal([]byte(r), &records)
+
+	return records, err
+}
