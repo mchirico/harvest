@@ -2,6 +2,7 @@ package configure
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/levigross/grequests"
 	"log"
 	"os/user"
@@ -74,8 +75,8 @@ func TestCodeToPassStruct(t *testing.T) {
 
 func TestInvalidGetAccessToken(t *testing.T) {
 	c := CodeToPassStruct{}
-	c.Secret = "t-xqP"
-	c.Id = "sqXYl52"
+	c.Secret = "t-x"
+	c.Id = "sqXYl"
 	c.Code = "1453"
 	c.GrantType = "authorization_code"
 
@@ -89,6 +90,7 @@ func TestInvalidGetAccessToken(t *testing.T) {
 	url := "https://id.getharvest.com/api/v2/oauth2/token"
 	r, err := grequests.Post(url, &ro)
 
+	log.Println(r.String())
 	if strings.Contains(r.String(), "error") {
 		type E struct {
 			Error     string `json:"error"`
@@ -101,6 +103,68 @@ func TestInvalidGetAccessToken(t *testing.T) {
 		}
 	}
 
+}
+
+func TestWr(t *testing.T) {
+
+}
+
+func GetLastAccess() LastAccess {
+
+	usr, _ := user.Current()
+	file := usr.HomeDir + "/.harvestLive"
+	datain, _ := readFile(file)
+	l := LastAccess{}
+	json.Unmarshal([]byte(datain), &l)
+	log.Println(l.Start)
+	log.Println(l.Refresh.Id)
+	return l
+}
+
+// Mark ... this gets the refresh token
+func TestRefreshToken(t *testing.T) {
+
+	l := GetLastAccess()
+	r := LiveStruct{}
+	Access := l.Access
+	r = l.Refresh
+	GrantType := "refresh_token"
+
+	ro := grequests.RequestOptions{}
+	headers := map[string]string{}
+	headers["Content-Type"] = "application/json"
+	headers["grant_type"] = GrantType
+	headers["Authorization"] = fmt.Sprintf("Bearer %v", Access)
+
+	ro.Headers = headers
+	data, _ := json.Marshal(r)
+	ro.JSON = data
+	url := "https://id.getharvest.com/api/v2/oauth2/token"
+	result, err := grequests.Post(url, &ro)
+
+	log.Println(result.String())
+	log.Println(err)
+
+}
+
+func TestRefreshFunc(t *testing.T) {
+	r := UnmarshelRefreshToken(Refresh())
+	log.Println(r.Access)
+}
+
+func TestGetID(t *testing.T) {
+	l := GetLastAccess()
+	GetID(l.Access)
+}
+
+func TestGetTODO(t *testing.T) {
+	td := GetTODO()
+	fmt.Println(td.Id)
+}
+
+func TestGetTODOtoken(t *testing.T) {
+	tt := GetTODOtoken()
+	fmt.Println(tt.Token)
 }
 
 /*
@@ -118,7 +182,7 @@ func TestWriteResponseDataToFile(t *testing.T) {
 	headers["Content-Type"] = "application/json"
 	ro.Headers = headers
 
-	s := ResultData{Access: access,
+	s := RefreshStruct{Access: access,
 		Refresh: "14jzGD_rwi", Type: "bearer",
 		Expires: 1209599}
 	ro.JSON = s

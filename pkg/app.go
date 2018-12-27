@@ -36,6 +36,9 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/products", a.getProducts).Methods("GET")
 	a.Router.HandleFunc("/auth", a.getAuth).Methods("GET")
 	a.Router.HandleFunc("/auth", a.getAuth).Methods("POST")
+	a.Router.HandleFunc("/auth2", a.getAuth2).Methods("GET")
+	a.Router.HandleFunc("/auth2", a.getAuth2).Methods("POST")
+
 	a.Router.HandleFunc("/upload", a.receiveFile).Methods("POST")
 	// a.Router.HandleFunc("/product", a.createProduct).Methods("POST")
 
@@ -146,6 +149,27 @@ func (a *App) getAuth(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Printf("\n\n Something Wrong:%v\n\n", vals)
 	}
+}
+
+func (a *App) getAuth2(w http.ResponseWriter, r *http.Request) {
+
+	log.Printf("We are in getAuth2\n")
+	log.Printf("Method: %v\n", r.Method)
+	log.Printf("Header: %v\n", r.Header)
+	vals := r.URL.Query()
+	log.Printf("vals:\n%v", vals)
+	getToDoistToken(vals)
+
+}
+
+func getToDoistToken(vals map[string][]string) {
+	ro := grequests.RequestOptions{}
+	headers := map[string]string{}
+	headers["Content-Type"] = "application/json"
+	//headers["Authorization"] = fmt.Sprintf("Bearer %s", string(access_token))
+	headers["User-Agent"] = "AiPiggybot (mchirico@gmail.com)"
+	ro.Headers = headers
+	//url := "https://id.getharvest.com/api/v2/accounts"
 }
 
 /*
