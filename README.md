@@ -11,6 +11,8 @@ go get -u github.com/gorilla/rpc
 go get -u github.com/levigross/grequests
 go get -u github.com/google/uuid
 
+go get -u github.com/mongodb/mongo-go-driver/mongo
+
 
 # Run Different Examples
 go get -u github.com/mchirico/harvest/cmd/auth
